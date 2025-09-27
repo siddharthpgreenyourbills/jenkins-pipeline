@@ -1,8 +1,9 @@
 pipeline {
-    agent { label 'docker-agent' }  // Runs on Docker server node
+    agent { label 'docker-host' }  // Runs on Docker server node
 
     environment {
-        IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // Docker image name
+        IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // Docker image nameo
+	DOCKER_SERVER_IP = "172.31.39.22"  // Replace with your Docker server IP
     }
 
     stages {
@@ -36,12 +37,12 @@ pipeline {
             steps {
                 // Deploy to your Docker server via SSH
                 sshagent (credentials: ['docker-server-ssh']) {
-                    sh '''
-                    ssh -o StrictHostKeyChecking=no ec2-user@<DOCKER_SERVER_IP> '
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ec2-user@${DOCKER_SERVER_IP} '
                         docker pull $IMAGE_NAME:latest &&
                         docker compose -f /path/to/docker-compose.yml up -d --force-recreate
                     '
-                    '''
+                    """
                 }
             }
         }
