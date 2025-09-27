@@ -37,10 +37,9 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                withCredentials([file(credentialsId: 'docker-server-key', variable: 'SSH_KEY')]) {
+                sshagent(['docker-server-key']) {
                     sh """
-                        chmod 600 $SSH_KEY
-                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DOCKER_SERVER_IP} \\
+                        ssh  -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DOCKER_SERVER_IP} \\
                         "docker pull ${IMAGE_NAME}:latest && \\
                         docker compose -f ${DOCKER_COMPOSE_PATH} up -d --force-recreate"
                     """
