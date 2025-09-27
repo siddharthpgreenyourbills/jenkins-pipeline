@@ -1,9 +1,8 @@
 pipeline {
-    agent any
+    agent { label 'docker-agent' }  // Runs on Docker server node
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('8e2578da-0e7a-4e09-8d30-de8762ec2315')  // ID you will create in Jenkins
-        IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // replace with your Docker Hub repo
+        IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // Docker image name
     }
 
     stages {
@@ -15,31 +14,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh 'docker build -t $IMAGE_NAME:latest .'
-                }
+                sh 'docker build -t $IMAGE_NAME:latest .'
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                script {
-                    sh "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"
+                withCredentials([usernamePassword(credentialsId: '8e2578da-0e7a-4e09-8d30-de8762ec2315', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
 
         stage('Push Image') {
             steps {
-                script {
-                    sh 'docker push $IMAGE_NAME:latest'
-                }
+                sh 'docker push $IMAGE_NAME:latest'
             }
         }
 
         stage('Deploy') {
             steps {
-                // On your Docker server: pull new image and restart container
+                // Deploy to your Docker server via SSH
                 sshagent (credentials: ['docker-server-ssh']) {
                     sh '''
                     ssh -o StrictHostKeyChecking=no ec2-user@<DOCKER_SERVER_IP> '
