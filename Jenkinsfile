@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // Docker image nameo
 	DOCKER_SERVER_IP = "172.31.39.22"  // Replace with your Docker server IP
+        DEPLOY_USER = "ec2-user" // or whatever user you use to SSH
     }
 
     stages {
