@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-cred')  // ID you will create in Jenkins
+        DOCKERHUB_CREDENTIALS = credentials('8e2578da-0e7a-4e09-8d30-de8762ec2315')  // ID you will create in Jenkins
         IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // replace with your Docker Hub repo
     }
 
