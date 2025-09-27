@@ -35,13 +35,12 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                // Deploy to your Docker server via SSH
-                sshagent (credentials: ['docker-server-ssh']) {
+                withCredentials([file(credentialsId: 'docker-server-key', variable: 'SSH_KEY')]) {
                     sh """
-                    ssh -o StrictHostKeyChecking=no ec2-user@${DOCKER_SERVER_IP} '
-                        docker pull $IMAGE_NAME:latest &&
-                        docker compose -f /path/to/docker-compose.yml up -d --force-recreate
-                    '
+                        chmod 600 $SSH_KEY
+                        ssh -i $SSH_KEY -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DOCKER_SERVER_IP} \\
+                        "docker pull ${IMAGE_NAME}:latest && \\
+                        docker compose -f ${DOCKER_COMPOSE_PATH} up -d --force-recreate"
                     """
                 }
             }
