@@ -1,51 +1,45 @@
 pipeline {
-    agent { label 'docker-host' }  // Runs on Docker server node
+  agent { label 'docker-host' }
 
-    environment {
-        IMAGE_NAME = "sidveenfin/jenkin-pipeline"  // Docker image nameo
-	DOCKER_SERVER_IP = "172.31.39.22"  // Replace with your Docker server IP
-        DEPLOY_USER = "ec2-user" // or whatever user you use to SSH
-        DOCKER_COMPOSE_PATH = "/home/ec2-user/jenkins-pipeline" // compose Path
+  environment {
+    IMAGE_NAME = "sidveenfin/jenkin-pipeline"
+    DOCKER_COMPOSE_PATH = "/home/ec2-user/jenkins-pipeline/docker-compose.yml"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/siddharthpgreenyourbills/jenkins-pipeline'
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/siddharthpgreenyourbills/jenkins-pipeline'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
-            }
-        }
-
-        stage('Login to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: '8e2578da-0e7a-4e09-8d30-de8762ec2315', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                }
-            }
-        }
-
-        stage('Push Image') {
-            steps {
-                sh 'docker push $IMAGE_NAME:latest'
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                sshagent(['docker-server-key']) {
-                    sh """
-                        ssh  -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DOCKER_SERVER_IP} \\
-                        "docker pull ${IMAGE_NAME}:latest && \\
-                        docker compose -f ${DOCKER_COMPOSE_PATH} up -d --force-recreate"
-                    """
-                }
-            }
-        }
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t $IMAGE_NAME:latest .'
+      }
     }
+
+    stage('Login to Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+        }
+      }
+    }
+
+    stage('Push Image') {
+      steps {
+        sh 'docker push $IMAGE_NAME:latest'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        // runs on docker-host node — so run compose locally
+        sh "docker pull $IMAGE_NAME:latest"
+        sh "docker compose -f $DOCKER_COMPOSE_PATH up -d --force-recreate"
+      }
+    }
+  }
 }
 
